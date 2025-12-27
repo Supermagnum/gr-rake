@@ -9,7 +9,7 @@ parameters:
 - id: num_fingers
   label: Number of Fingers
   dtype: int
-  default: 3
+  default: 4
   options: [1, 2, 3, 4, 5]
   option_labels: ['1', '2', '3', '4', '5']
   hide: ${ 'part' if num_fingers else 'none' }
@@ -17,20 +17,62 @@ parameters:
 - id: delays
   label: Delays (samples)
   dtype: int_vector
-  default: '[0, 10, 20]'
+  default: '[0, 10, 20, 30]'
   hide: ${ 'part' if delays else 'none' }
 
 - id: gains
   label: Gains
   dtype: real_vector
-  default: '[1.0, 0.8, 0.6]'
+  default: '[1.0, 0.8, 0.6, 0.4]'
   hide: ${ 'part' if gains else 'none' }
 
 - id: pattern_length
   label: Pattern Length
   dtype: int
-  default: 16
+  default: 42
   hide: ${ 'part' if pattern_length else 'none' }
+
+- id: gps_speed
+  label: GPS Speed (km/h, -1 to disable)
+  dtype: float
+  default: '-1.0'
+  hide: ${ 'part' if gps_speed else 'none' }
+
+- id: path_search_rate
+  label: Path Search Rate (Hz)
+  dtype: float
+  default: '20.0'
+  hide: ${ 'part' if path_search_rate else 'none' }
+
+- id: tracking_bandwidth
+  label: Tracking Bandwidth (Hz)
+  dtype: float
+  default: '120.0'
+  hide: ${ 'part' if tracking_bandwidth else 'none' }
+
+- id: path_detection_threshold
+  label: Path Detection Threshold
+  dtype: float
+  default: '0.5'
+  hide: ${ 'part' if path_detection_threshold else 'none' }
+
+- id: lock_threshold
+  label: Lock Threshold
+  dtype: float
+  default: '0.7'
+  hide: ${ 'part' if lock_threshold else 'none' }
+
+- id: reassignment_period
+  label: Reassignment Period (s)
+  dtype: float
+  default: '1.0'
+  hide: ${ 'part' if reassignment_period else 'none' }
+
+- id: adaptive_mode
+  label: Adaptive Mode
+  dtype: bool
+  default: 'False'
+  hide: ${ 'part' if adaptive_mode else 'none' }
 
 inputs:
 - domain: stream
@@ -45,5 +87,13 @@ outputs:
 templates:
   imports: from gnuradio import rake_receiver
   make: rake_receiver.rake_receiver_cc(${num_fingers}, ${delays}, ${gains}, ${pattern_length})
+  callbacks:
+  - set_gps_speed(${gps_speed})
+  - set_path_search_rate(${path_search_rate})
+  - set_tracking_bandwidth(${tracking_bandwidth})
+  - set_path_detection_threshold(${path_detection_threshold})
+  - set_lock_threshold(${lock_threshold})
+  - set_reassignment_period(${reassignment_period})
+  - set_adaptive_mode(${adaptive_mode})
 
 file_format: 1

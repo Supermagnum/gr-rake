@@ -113,17 +113,215 @@ rake.set_pattern(pattern)
 
 ### Block Parameters
 
-- **num_fingers** (int): Number of RAKE fingers, must be between 1 and 5
-- **delays** (vector<int>): Delay values for each finger in samples
-- **gains** (vector<float>): Gain values for combining each finger output
-- **pattern_length** (int): Length of the correlation pattern
+**Basic Parameters:**
+- **num_fingers** (int): Number of RAKE fingers, must be between 1 and 5 (default: 4)
+- **delays** (vector<int>): Delay values for each finger in samples (default: [0, 10, 20, 30])
+- **gains** (vector<float>): Gain values for combining each finger output (default: [1.0, 0.8, 0.6, 0.4])
+- **pattern_length** (int): Length of the correlation pattern (default: 42 chips)
+
+**Adaptive Parameters (Recommended Defaults):**
+- **gps_speed** (float): GPS speed in km/h for adaptive mode. Set to -1 to disable (default: -1.0)
+- **path_search_rate** (float): Path search rate in Hz (default: 20.0 Hz)
+- **tracking_bandwidth** (float): Tracking bandwidth in Hz (default: 120.0 Hz)
+- **path_detection_threshold** (float): Path detection threshold as fraction of peak correlation (default: 0.5)
+- **lock_threshold** (float): Lock detector threshold correlation value (default: 0.7)
+- **reassignment_period** (float): Reassignment period in seconds (default: 1.0 s)
+- **adaptive_mode** (bool): Enable adaptive mode based on GPS speed (default: False)
 
 ### Methods
 
+**Basic Methods:**
 - `set_delays(delays)`: Update the delay values for each finger
 - `set_gains(gains)`: Update the gain values for each finger
 - `set_pattern(pattern)`: Set the correlation pattern (complex vector)
 - `num_fingers()`: Get the current number of fingers
+
+**Adaptive Methods:**
+- `set_gps_speed(speed_kmh)`: Set GPS speed for adaptive parameter adjustment
+- `gps_speed()`: Get current GPS speed setting
+- `set_path_search_rate(rate_hz)`: Set path search rate
+- `path_search_rate()`: Get current path search rate
+- `set_tracking_bandwidth(bandwidth_hz)`: Set tracking bandwidth
+- `tracking_bandwidth()`: Get current tracking bandwidth
+- `set_path_detection_threshold(threshold)`: Set path detection threshold
+- `path_detection_threshold()`: Get current path detection threshold
+- `set_lock_threshold(threshold)`: Set lock detector threshold
+- `lock_threshold()`: Get current lock threshold
+- `set_reassignment_period(period_s)`: Set reassignment period
+- `reassignment_period()`: Get current reassignment period
+- `set_adaptive_mode(enable)`: Enable or disable adaptive mode
+- `adaptive_mode()`: Check if adaptive mode is enabled
+
+**GPS Parsing Methods:**
+- `parse_gps_data(gps_data)`: Parse GPS data from NMEA0183 or GPSD format (auto-detects)
+- `parse_nmea0183(nmea_message)`: Parse NMEA0183 message and update GPS speed
+- `parse_gpsd(gpsd_json)`: Parse GPSD JSON message and update GPS speed
+
+### Adaptive RAKE Parameters Based on GPS Speed
+
+The RAKE receiver can automatically adjust its parameters based on GPS speed to optimize performance for different mobility scenarios. Parameters are **interpolated smoothly** between speed categories to provide continuous adaptation:
+
+**Stationary (0-5 km/h):**
+- Path search rate: 5 Hz (200ms updates)
+- Tracking bandwidth: 50 Hz
+- Number of fingers: 3
+- Reassignment period: 2 seconds
+- *Reasoning: Environment stable, save processing power*
+
+**Pedestrian (5-15 km/h):**
+- Path search rate: 10 Hz (100ms updates)
+- Tracking bandwidth: 100 Hz
+- Number of fingers: 3
+- Reassignment period: 1 second
+- *Reasoning: Slow multipath changes*
+- *Interpolation: Smoothly transitions from Stationary to Pedestrian parameters*
+
+**Vehicle Low-Speed (15-60 km/h) - Default:**
+- Path search rate: 20 Hz (50ms updates)
+- Tracking bandwidth: 120 Hz
+- Number of fingers: 4
+- Reassignment period: 1 second
+- *Reasoning: Moderate multipath dynamics, urban driving*
+- *Interpolation: Smoothly transitions from Pedestrian to Low-Speed parameters*
+
+**Vehicle High-Speed (60-120 km/h):**
+- Path search rate: 50 Hz (20ms updates)
+- Tracking bandwidth: 200 Hz
+- Number of fingers: 4
+- Reassignment period: 0.5 seconds
+- *Reasoning: Rapid environment changes, highway speeds*
+- *Interpolation: Smoothly transitions from Low-Speed to High-Speed parameters*
+
+**Vehicle Very High-Speed (>120 km/h):**
+- Path search rate: 100 Hz (10ms updates)
+- Tracking bandwidth: 300 Hz
+- Number of fingers: 4
+- Reassignment period: 0.25 seconds
+- *Reasoning: Very fast multipath evolution, maximum Doppler*
+- *Interpolation: Smoothly transitions from High-Speed to Very High-Speed parameters (capped at 200 km/h)*
+
+**Interpolation Behavior:**
+The implementation uses linear interpolation between adjacent speed categories. For example:
+- At 10 km/h (midway between 5-15 km/h): Parameters are halfway between Stationary and Pedestrian
+- At 37.5 km/h (midway between 15-60 km/h): Parameters are halfway between Pedestrian and Low-Speed
+- At 90 km/h (midway between 60-120 km/h): Parameters are halfway between Low-Speed and High-Speed
+
+This provides smooth, continuous parameter adjustment rather than discrete jumps, resulting in better performance during speed transitions.
+
+### Using Adaptive Mode
+
+```python
+from gnuradio import rake_receiver
+import numpy as np
+
+# Create RAKE receiver with default parameters
+rake = rake_receiver.rake_receiver_cc(
+    num_fingers=4,
+    delays=[0, 10, 20, 30],
+    gains=[1.0, 0.8, 0.6, 0.4],
+    pattern_length=42
+)
+
+# Enable adaptive mode
+rake.set_adaptive_mode(True)
+
+# Update GPS speed - parameters will adjust automatically
+rake.set_gps_speed(45.0)  # Vehicle low-speed mode
+rake.set_gps_speed(100.0)  # Vehicle high-speed mode
+rake.set_gps_speed(0.0)    # Stationary mode
+```
+
+### NMEA0183 and GPSD Support
+
+The RAKE receiver includes built-in parsers for NMEA0183 and GPSD formats, allowing automatic GPS speed extraction from GPS receivers.
+
+#### NMEA0183 Parsing
+
+The module supports parsing NMEA0183 messages, particularly:
+- **GPRMC** (Recommended Minimum Course): Extracts speed from field 7 (speed in knots)
+- **GPVTG** (Track Made Good and Ground Speed): Extracts speed from field 7 (speed in km/h)
+
+```python
+from gnuradio import rake_receiver
+
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Parse GPRMC message (speed in knots)
+gprmc = "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A"
+rake.parse_nmea0183(gprmc)  # Automatically extracts 22.4 knots = 41.5 km/h
+
+# Parse GPVTG message (speed in km/h)
+gpvtg = "$GPVTG,054.7,T,034.4,M,005.5,N,010.2,K*48"
+rake.parse_nmea0183(gpvtg)  # Automatically extracts 10.2 km/h
+```
+
+#### GPSD Parsing
+
+The module supports parsing GPSD JSON messages, extracting speed from TPV (Time-Position-Velocity) messages:
+
+```python
+from gnuradio import rake_receiver
+
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Parse GPSD TPV message (speed in m/s)
+gpsd_tpv = '{"class":"TPV","device":"/dev/ttyUSB0","time":"2024-01-01T12:00:00.000Z",' \
+           '"lat":48.123,"lon":11.456,"speed":12.5}'
+rake.parse_gpsd(gpsd_tpv)  # Automatically extracts 12.5 m/s = 45.0 km/h
+```
+
+#### Auto-Detection
+
+The `parse_gps_data()` method automatically detects the format and parses accordingly:
+
+```python
+# Automatically detects and parses NMEA0183 or GPSD
+rake.parse_gps_data("$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A")
+rake.parse_gps_data('{"class":"TPV","speed":10.0}')
+```
+
+#### Integration with GPS Receivers
+
+**Example: Reading from serial GPS device (NMEA0183):**
+
+```python
+import serial
+from gnuradio import rake_receiver
+
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Open serial connection to GPS
+gps_serial = serial.Serial('/dev/ttyUSB0', 4800, timeout=1)
+
+while True:
+    line = gps_serial.readline().decode('ascii', errors='ignore')
+    if line.startswith('$GPRMC') or line.startswith('$GPVTG'):
+        rake.parse_nmea0183(line.strip())
+```
+
+**Example: Reading from GPSD:**
+
+```python
+import socket
+import json
+from gnuradio import rake_receiver
+
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Connect to GPSD
+gpsd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+gpsd_socket.connect(('localhost', 2947))
+gpsd_socket.send(b'?WATCH={"enable":true,"json":true}\n')
+
+while True:
+    data = gpsd_socket.recv(1024).decode('utf-8')
+    if '"class":"TPV"' in data:
+        rake.parse_gpsd(data)
+```
 
 ## Implementation Details
 

@@ -13,6 +13,7 @@ include(GrPlatform) #define LIB_SUFFIX
 
 list(APPEND rake_receiver_sources
     rake_receiver_cc_impl.cc
+    gps_parser.cc
 )
 
 set(rake_receiver_sources
