@@ -33,6 +33,26 @@ sudo make install
 sudo ldconfig
 ```
 
+### Verifying Installation
+
+After installation, verify that the module is properly installed:
+
+```bash
+# Check library installation
+ls /usr/local/lib/libgnuradio-rake_receiver.so*
+
+# Check Python module
+python3 -c "from gnuradio import rake_receiver; print('Module installed successfully')"
+
+# Check GRC block
+ls /usr/local/share/gnuradio/grc/blocks/rake_receiver_rake_receiver_cc.block.yml
+
+# Check headers
+ls /usr/local/include/gnuradio/rake_receiver/*.h
+```
+
+If all commands succeed, the module is properly installed.
+
 ### Testing the Installation
 
 After installation, you can test the module in Python:
