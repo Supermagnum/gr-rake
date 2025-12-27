@@ -1,0 +1,47 @@
+# Build directories
+build/
+_build/
+cmake-build-*/
+
+# Compiled files
+*.o
+*.so
+*.so.*
+*.a
+*.pyc
+*.pyo
+__pycache__/
+*.exe
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+!cmake/*.cmake
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+*.egg-info/
+dist/
+.eggs/
+
+# Documentation
+docs/doxygen/html/
+docs/doxygen/xml/
+
+# Test results
+Testing/
+CTestTestfile.cmake
+
+# OS
+.DS_Store
+Thumbs.db

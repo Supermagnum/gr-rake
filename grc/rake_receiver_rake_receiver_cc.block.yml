@@ -1,0 +1,49 @@
+# This file is part of gr-rake_receiver
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+id: rake_receiver_rake_receiver_cc
+label: RAKE Receiver (CC)
+category: '[rake_receiver]'
+
+parameters:
+- id: num_fingers
+  label: Number of Fingers
+  dtype: int
+  default: 3
+  options: [1, 2, 3, 4, 5]
+  option_labels: ['1', '2', '3', '4', '5']
+  hide: ${ 'part' if num_fingers else 'none' }
+
+- id: delays
+  label: Delays (samples)
+  dtype: int_vector
+  default: '[0, 10, 20]'
+  hide: ${ 'part' if delays else 'none' }
+
+- id: gains
+  label: Gains
+  dtype: real_vector
+  default: '[1.0, 0.8, 0.6]'
+  hide: ${ 'part' if gains else 'none' }
+
+- id: pattern_length
+  label: Pattern Length
+  dtype: int
+  default: 16
+  hide: ${ 'part' if pattern_length else 'none' }
+
+inputs:
+- domain: stream
+  dtype: complex
+  vlen: 1
+
+outputs:
+- domain: stream
+  dtype: complex
+  vlen: 1
+
+templates:
+  imports: from gnuradio import rake_receiver
+  make: rake_receiver.rake_receiver_cc(${num_fingers}, ${delays}, ${gains}, ${pattern_length})
+
+file_format: 1
