@@ -78,6 +78,9 @@ inputs:
 - domain: stream
   dtype: complex
   vlen: 1
+- domain: message
+  id: gps
+  optional: true
 
 outputs:
 - domain: stream

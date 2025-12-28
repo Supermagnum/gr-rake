@@ -13,6 +13,7 @@
 
 #include <gnuradio/io_signature.h>
 #include <gnuradio/gr_complex.h>
+#include <pmt/pmt.h>
 #include "rake_receiver_cc_impl.h"
 
 namespace gr {
@@ -77,6 +78,11 @@ rake_receiver_cc_impl::rake_receiver_cc_impl(int num_fingers,
     if (d_num_fingers == 0) {
         d_num_fingers = 4;
     }
+
+    // Register message input port for GPS data
+    message_port_register_in(pmt::mp("gps"));
+    set_msg_handler(pmt::mp("gps"),
+                    [this](pmt::pmt_t msg) { this->handle_gps_message(msg); });
 }
 
 rake_receiver_cc_impl::~rake_receiver_cc_impl() {}
@@ -345,6 +351,30 @@ bool rake_receiver_cc_impl::parse_gpsd(const std::string& gpsd_json)
         return true;
     }
     return false;
+}
+
+void rake_receiver_cc_impl::handle_gps_message(pmt::pmt_t msg)
+{
+    // Extract string from PMT message
+    if (pmt::is_symbol(msg)) {
+        std::string gps_data = pmt::symbol_to_string(msg);
+        parse_gps_data(gps_data);
+    } else if (pmt::is_u8vector(msg)) {
+        // Handle byte vector (common for serial data)
+        std::vector<uint8_t> vec = pmt::u8vector_elements(msg);
+        std::string gps_data(vec.begin(), vec.end());
+        parse_gps_data(gps_data);
+    } else {
+        // Try to convert to string
+        try {
+            std::string gps_data = pmt::symbol_to_string(msg);
+            parse_gps_data(gps_data);
+        } catch (...) {
+            // If conversion fails, try as string representation
+            std::string gps_data = pmt::write_string(msg);
+            parse_gps_data(gps_data);
+        }
+    }
 }
 
 } /* namespace rake_receiver */

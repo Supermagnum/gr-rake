@@ -284,7 +284,90 @@ rake.parse_gps_data('{"class":"TPV","speed":10.0}')
 
 #### Integration with GPS Receivers
 
-**Example: Reading from serial GPS device (NMEA0183):**
+The RAKE receiver block includes a **message input port** named `gps` that automatically parses incoming GPS data. This allows direct connection from serial GPS devices or GPSD without manual parsing.
+
+**Example: Using message port with serial GPS device (NMEA0183):**
+
+```python
+from gnuradio import gr, blocks, rake_receiver
+import pmt
+import serial
+import threading
+
+# Create flowgraph
+fg = gr.top_block()
+
+# Create RAKE receiver
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Connect signal processing chain
+fg.connect(signal_source, rake)
+fg.connect(rake, signal_sink)
+
+# Function to read GPS data and send to message port
+def gps_reader():
+    gps_serial = serial.Serial('/dev/ttyUSB0', 4800, timeout=1)
+    while True:
+        line = gps_serial.readline().decode('ascii', errors='ignore')
+        if line.startswith('$GPRMC') or line.startswith('$GPVTG'):
+            # Send to RAKE receiver's message port
+            msg = pmt.string_to_symbol(line.strip())
+            rake.message_port_pub(pmt.intern("gps"), msg)
+
+# Start GPS reader thread
+gps_thread = threading.Thread(target=gps_reader, daemon=True)
+gps_thread.start()
+
+fg.start()
+fg.wait()
+```
+
+**Note:** The message port automatically detects and parses NMEA0183 or GPSD format, so you don't need to call `parse_nmea0183()` or `parse_gpsd()` manually when using the message port.
+
+**Example: Using message port with GPSD:**
+
+```python
+from gnuradio import gr, blocks, rake_receiver
+import pmt
+import socket
+import threading
+
+# Create flowgraph
+fg = gr.top_block()
+
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+def gpsd_reader():
+    gpsd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    gpsd_socket.connect(('localhost', 2947))
+    gpsd_socket.send(b'?WATCH={"enable":true,"json":true}\n')
+    
+    while True:
+        data = gpsd_socket.recv(1024).decode('utf-8')
+        if '"class":"TPV"' in data:
+            # Send to RAKE receiver's message port
+            msg = pmt.string_to_symbol(data.strip())
+            rake.message_port_pub(pmt.intern("gps"), msg)
+
+# Start GPSD reader thread
+gpsd_thread = threading.Thread(target=gpsd_reader, daemon=True)
+gpsd_thread.start()
+
+fg.start()
+fg.wait()
+```
+
+**Message Port Details:**
+- Port name: `gps`
+- Accepts: PMT string messages containing NMEA0183 or GPSD JSON data
+- Auto-detection: Automatically detects format and parses speed
+- Thread-safe: Can be called from any thread
+
+**Alternative: Manual parsing (without message port):**
+
+If you prefer to parse GPS data manually, you can still use the parsing methods directly:
 
 ```python
 import serial
@@ -300,27 +383,6 @@ while True:
     line = gps_serial.readline().decode('ascii', errors='ignore')
     if line.startswith('$GPRMC') or line.startswith('$GPVTG'):
         rake.parse_nmea0183(line.strip())
-```
-
-**Example: Reading from GPSD:**
-
-```python
-import socket
-import json
-from gnuradio import rake_receiver
-
-rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
-rake.set_adaptive_mode(True)
-
-# Connect to GPSD
-gpsd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-gpsd_socket.connect(('localhost', 2947))
-gpsd_socket.send(b'?WATCH={"enable":true,"json":true}\n')
-
-while True:
-    data = gpsd_socket.recv(1024).decode('utf-8')
-    if '"class":"TPV"' in data:
-        rake.parse_gpsd(data)
 ```
 
 ## Implementation Details

@@ -41,6 +41,7 @@ private:
     // Helper methods
     void update_adaptive_parameters();
     void apply_speed_category(float speed_kmh);
+    void handle_gps_message(pmt::pmt_t msg);
 
 public:
     rake_receiver_cc_impl(int num_fingers,
