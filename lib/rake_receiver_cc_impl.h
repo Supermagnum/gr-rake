@@ -38,6 +38,14 @@ private:
     bool d_adaptive_mode;
     float d_sample_rate;
 
+    // GPS source configuration
+    std::string d_gps_source;
+    std::string d_serial_device;
+    int d_serial_baud_rate;
+    std::string d_gpsd_host;
+    int d_gpsd_port;
+    bool d_gps_running;
+
     // Helper methods
     void update_adaptive_parameters();
     void apply_speed_category(float speed_kmh);
@@ -73,6 +81,19 @@ public:
     bool parse_gps_data(const std::string& gps_data) override;
     bool parse_nmea0183(const std::string& nmea_message) override;
     bool parse_gpsd(const std::string& gpsd_json) override;
+
+    void set_gps_source(const std::string& source_type) override;
+    std::string gps_source() const override;
+    void set_serial_device(const std::string& device_path) override;
+    std::string serial_device() const override;
+    void set_serial_baud_rate(int baud_rate) override;
+    int serial_baud_rate() const override;
+    void set_gpsd_host(const std::string& host) override;
+    std::string gpsd_host() const override;
+    void set_gpsd_port(int port) override;
+    int gpsd_port() const override;
+    bool start_gps() override;
+    void stop_gps() override;
 
     int work(int noutput_items,
              gr_vector_const_void_star& input_items,

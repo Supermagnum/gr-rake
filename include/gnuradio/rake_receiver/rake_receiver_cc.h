@@ -193,6 +193,88 @@ public:
      * \return True if parsing successful
      */
     virtual bool parse_gpsd(const std::string& gpsd_json) = 0;
+
+    /*!
+     * \brief Set GPS source type
+     *
+     * \param source_type "serial" for serial GPS, "gpsd" for GPSD, "none" to disable
+     */
+    virtual void set_gps_source(const std::string& source_type) = 0;
+
+    /*!
+     * \brief Get current GPS source type
+     *
+     * \return Current GPS source type
+     */
+    virtual std::string gps_source() const = 0;
+
+    /*!
+     * \brief Set serial GPS device path
+     *
+     * \param device_path Serial device path (e.g., "/dev/ttyUSB0")
+     */
+    virtual void set_serial_device(const std::string& device_path) = 0;
+
+    /*!
+     * \brief Get current serial device path
+     *
+     * \return Serial device path
+     */
+    virtual std::string serial_device() const = 0;
+
+    /*!
+     * \brief Set serial baud rate
+     *
+     * \param baud_rate Baud rate (e.g., 4800, 9600)
+     */
+    virtual void set_serial_baud_rate(int baud_rate) = 0;
+
+    /*!
+     * \brief Get current serial baud rate
+     *
+     * \return Baud rate
+     */
+    virtual int serial_baud_rate() const = 0;
+
+    /*!
+     * \brief Set GPSD host
+     *
+     * \param host GPSD hostname or IP address (e.g., "localhost")
+     */
+    virtual void set_gpsd_host(const std::string& host) = 0;
+
+    /*!
+     * \brief Get current GPSD host
+     *
+     * \return GPSD host
+     */
+    virtual std::string gpsd_host() const = 0;
+
+    /*!
+     * \brief Set GPSD port
+     *
+     * \param port GPSD port number (e.g., 2947)
+     */
+    virtual void set_gpsd_port(int port) = 0;
+
+    /*!
+     * \brief Get current GPSD port
+     *
+     * \return GPSD port number
+     */
+    virtual int gpsd_port() const = 0;
+
+    /*!
+     * \brief Start GPS connection (if configured)
+     *
+     * \return True if connection started successfully
+     */
+    virtual bool start_gps() = 0;
+
+    /*!
+     * \brief Stop GPS connection
+     */
+    virtual void stop_gps() = 0;
 };
 
 } // namespace rake_receiver

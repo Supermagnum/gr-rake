@@ -74,6 +74,38 @@ parameters:
   default: 'False'
   hide: ${ 'part' if adaptive_mode else 'none' }
 
+- id: gps_source
+  label: GPS Source
+  dtype: enum
+  default: 'none'
+  options: ['none', 'serial', 'gpsd']
+  option_labels: ['None', 'Serial', 'GPSD']
+  hide: ${ 'part' if gps_source else 'none' }
+
+- id: serial_device
+  label: Serial Device
+  dtype: string
+  default: '/dev/ttyUSB0'
+  hide: ${ 'part' if serial_device else 'none' }
+
+- id: serial_baud_rate
+  label: Serial Baud Rate
+  dtype: int
+  default: '4800'
+  hide: ${ 'part' if serial_baud_rate else 'none' }
+
+- id: gpsd_host
+  label: GPSD Host
+  dtype: string
+  default: 'localhost'
+  hide: ${ 'part' if gpsd_host else 'none' }
+
+- id: gpsd_port
+  label: GPSD Port
+  dtype: int
+  default: '2947'
+  hide: ${ 'part' if gpsd_port else 'none' }
+
 inputs:
 - domain: stream
   dtype: complex
@@ -98,5 +130,10 @@ templates:
   - set_lock_threshold(${lock_threshold})
   - set_reassignment_period(${reassignment_period})
   - set_adaptive_mode(${adaptive_mode})
+  - set_gps_source(${gps_source})
+  - set_serial_device(${serial_device})
+  - set_serial_baud_rate(${serial_baud_rate})
+  - set_gpsd_host(${gpsd_host})
+  - set_gpsd_port(${gpsd_port})
 
 file_format: 1

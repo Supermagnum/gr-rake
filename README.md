@@ -128,6 +128,13 @@ rake.set_pattern(pattern)
 - **reassignment_period** (float): Reassignment period in seconds (default: 1.0 s)
 - **adaptive_mode** (bool): Enable adaptive mode based on GPS speed (default: False)
 
+**GPS Source Configuration:**
+- **gps_source** (string): GPS source type - "none", "serial", or "gpsd" (default: "none")
+- **serial_device** (string): Serial device path for GPS (default: "/dev/ttyUSB0")
+- **serial_baud_rate** (int): Serial baud rate for GPS (default: 4800)
+- **gpsd_host** (string): GPSD hostname or IP address (default: "localhost")
+- **gpsd_port** (int): GPSD port number (default: 2947)
+
 ### Methods
 
 **Basic Methods:**
@@ -284,7 +291,44 @@ rake.parse_gps_data('{"class":"TPV","speed":10.0}')
 
 #### Integration with GPS Receivers
 
-The RAKE receiver block includes a **message input port** named `gps` that automatically parses incoming GPS data. This allows direct connection from serial GPS devices or GPSD without manual parsing.
+The RAKE receiver block includes configurable GPS source parameters and a **message input port** named `gps` that automatically parses incoming GPS data. You can configure the GPS source directly in the block parameters.
+
+**Example: Configuring Serial GPS Device:**
+
+```python
+from gnuradio import rake_receiver
+
+# Create RAKE receiver
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Configure serial GPS source
+rake.set_gps_source("serial")
+rake.set_serial_device("/dev/ttyUSB0")  # Your GPS device
+rake.set_serial_baud_rate(4800)  # GPS baud rate
+
+# Now use the configured parameters with your serial reading code
+# The block stores these settings for reference
+print(f"GPS configured: {rake.serial_device()} at {rake.serial_baud_rate()} baud")
+```
+
+**Example: Configuring GPSD:**
+
+```python
+from gnuradio import rake_receiver
+
+# Create RAKE receiver
+rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 42)
+rake.set_adaptive_mode(True)
+
+# Configure GPSD source
+rake.set_gps_source("gpsd")
+rake.set_gpsd_host("localhost")  # GPSD hostname or IP
+rake.set_gpsd_port(2947)  # GPSD port
+
+# Now use the configured parameters with your GPSD connection code
+print(f"GPSD configured: {rake.gpsd_host()}:{rake.gpsd_port()}")
+```
 
 **Example: Using message port with serial GPS device (NMEA0183):**
 
@@ -307,7 +351,8 @@ fg.connect(rake, signal_sink)
 
 # Function to read GPS data and send to message port
 def gps_reader():
-    gps_serial = serial.Serial('/dev/ttyUSB0', 4800, timeout=1)
+    # Use configured serial parameters
+    gps_serial = serial.Serial(rake.serial_device(), rake.serial_baud_rate(), timeout=1)
     while True:
         line = gps_serial.readline().decode('ascii', errors='ignore')
         if line.startswith('$GPRMC') or line.startswith('$GPVTG'):
@@ -340,8 +385,9 @@ rake = rake_receiver.rake_receiver_cc(4, [0, 10, 20, 30], [1.0, 0.8, 0.6, 0.4], 
 rake.set_adaptive_mode(True)
 
 def gpsd_reader():
+    # Use configured GPSD parameters
     gpsd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    gpsd_socket.connect(('localhost', 2947))
+    gpsd_socket.connect((rake.gpsd_host(), rake.gpsd_port()))
     gpsd_socket.send(b'?WATCH={"enable":true,"json":true}\n')
     
     while True:

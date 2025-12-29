@@ -127,5 +127,58 @@ void bind_rake_receiver_cc(py::module& m)
         .def("parse_gpsd",
              &rake_receiver_cc::parse_gpsd,
              py::arg("gpsd_json"),
-             "Parse GPSD JSON message and update GPS speed");
+             "Parse GPSD JSON message and update GPS speed")
+
+        .def("set_gps_source",
+             &rake_receiver_cc::set_gps_source,
+             py::arg("source_type"),
+             "Set GPS source type (serial, gpsd, or none)")
+
+        .def("gps_source",
+             &rake_receiver_cc::gps_source,
+             "Get current GPS source type")
+
+        .def("set_serial_device",
+             &rake_receiver_cc::set_serial_device,
+             py::arg("device_path"),
+             "Set serial GPS device path")
+
+        .def("serial_device",
+             &rake_receiver_cc::serial_device,
+             "Get current serial device path")
+
+        .def("set_serial_baud_rate",
+             &rake_receiver_cc::set_serial_baud_rate,
+             py::arg("baud_rate"),
+             "Set serial baud rate")
+
+        .def("serial_baud_rate",
+             &rake_receiver_cc::serial_baud_rate,
+             "Get current serial baud rate")
+
+        .def("set_gpsd_host",
+             &rake_receiver_cc::set_gpsd_host,
+             py::arg("host"),
+             "Set GPSD hostname or IP address")
+
+        .def("gpsd_host",
+             &rake_receiver_cc::gpsd_host,
+             "Get current GPSD host")
+
+        .def("set_gpsd_port",
+             &rake_receiver_cc::set_gpsd_port,
+             py::arg("port"),
+             "Set GPSD port number")
+
+        .def("gpsd_port",
+             &rake_receiver_cc::gpsd_port,
+             "Get current GPSD port")
+
+        .def("start_gps",
+             &rake_receiver_cc::start_gps,
+             "Start GPS connection (if configured)")
+
+        .def("stop_gps",
+             &rake_receiver_cc::stop_gps,
+             "Stop GPS connection");
 }

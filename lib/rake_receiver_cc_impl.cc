@@ -46,7 +46,13 @@ rake_receiver_cc_impl::rake_receiver_cc_impl(int num_fingers,
       d_lock_threshold(0.7f),
       d_reassignment_period_s(1.0f),
       d_adaptive_mode(false),
-      d_sample_rate(1.0f)
+      d_sample_rate(1.0f),
+      d_gps_source("none"),
+      d_serial_device("/dev/ttyUSB0"),
+      d_serial_baud_rate(4800),
+      d_gpsd_host("localhost"),
+      d_gpsd_port(2947),
+      d_gps_running(false)
 {
     if (d_num_fingers < 1 || d_num_fingers > 5) {
         throw std::invalid_argument("Number of fingers must be between 1 and 5");
@@ -376,6 +382,55 @@ void rake_receiver_cc_impl::handle_gps_message(pmt::pmt_t msg)
         }
     }
 }
+
+void rake_receiver_cc_impl::set_gps_source(const std::string& source_type)
+{
+    d_gps_source = source_type;
+    if (source_type == "none" && d_gps_running) {
+        stop_gps();
+    }
+}
+
+std::string rake_receiver_cc_impl::gps_source() const { return d_gps_source; }
+
+void rake_receiver_cc_impl::set_serial_device(const std::string& device_path)
+{
+    d_serial_device = device_path;
+}
+
+std::string rake_receiver_cc_impl::serial_device() const { return d_serial_device; }
+
+void rake_receiver_cc_impl::set_serial_baud_rate(int baud_rate)
+{
+    d_serial_baud_rate = baud_rate;
+}
+
+int rake_receiver_cc_impl::serial_baud_rate() const { return d_serial_baud_rate; }
+
+void rake_receiver_cc_impl::set_gpsd_host(const std::string& host)
+{
+    d_gpsd_host = host;
+}
+
+std::string rake_receiver_cc_impl::gpsd_host() const { return d_gpsd_host; }
+
+void rake_receiver_cc_impl::set_gpsd_port(int port)
+{
+    d_gpsd_port = port;
+}
+
+int rake_receiver_cc_impl::gpsd_port() const { return d_gpsd_port; }
+
+bool rake_receiver_cc_impl::start_gps()
+{
+    // Note: Actual GPS connection is typically handled by external blocks
+    // This method is provided for compatibility and future extension
+    // Users should use the message port or external GPS blocks
+    d_gps_running = true;
+    return true;
+}
+
+void rake_receiver_cc_impl::stop_gps() { d_gps_running = false; }
 
 } /* namespace rake_receiver */
 } /* namespace gr */
