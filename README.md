@@ -84,6 +84,12 @@ The block is available in the `rake_receiver` category in GRC. You can configure
 - **Delays**: Vector of delay values in samples (e.g., `[0, 10, 20]`)
 - **Gains**: Vector of gain values for combining (e.g., `[1.0, 0.8, 0.6]`)
 - **Pattern Length**: Length of the correlation pattern
+- **GPS Source**: Select GPS source type (None, Serial, or GPSD)
+- **Serial Device**: Serial device path (e.g., `/dev/ttyUSB0`)
+- **Serial Baud Rate**: Serial baud rate (e.g., 4800)
+- **GPSD Host**: GPSD hostname or IP address (e.g., `localhost`)
+- **GPSD Port**: GPSD port number (e.g., 2947)
+- **GPS Message Port**: Optional message input port named `gps` for automatic GPS data parsing
 
 ### In Python Flowgraphs
 
